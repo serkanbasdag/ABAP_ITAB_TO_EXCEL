@@ -1,0 +1,87 @@
+REPORT ZSB_ITAB_TO_EXCEL.
+
+DATA: GT_DATA TYPE TABLE OF ZPERS_AVANS WITH HEADER LINE.
+
+
+DATA: BEGIN OF GT_HEADER OCCURS 0,
+  COLUMN_NAME(40),
+  END OF GT_HEADER.
+  DATA: GV_FILENAME TYPE STRING.
+
+SELECT-OPTIONS S_TCKNO FOR GT_DATA-TCKNO.
+
+START-OF-SELECTION.
+PERFORM GET_DATA.
+PERFORM GET_FILENAME.
+PERFORM BUILD_HEADER.
+PERFORM UPLOAD_EXCEL.
+
+*&---------------------------------------------------------------------*
+*&      Form  GET_DATA
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+*  -->  p1        text
+*  <--  p2        text
+*----------------------------------------------------------------------*
+FORM GET_DATA .
+SELECT * FROM ZPERS_AVANS INTO CORRESPONDING FIELDS OF TABLE GT_DATA.
+ENDFORM.
+*&---------------------------------------------------------------------*
+*&      Form  GET_FILENAME
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+*  -->  p1        text
+*  <--  p2        text
+*----------------------------------------------------------------------*
+FORM GET_FILENAME .
+CLEAR GV_FILENAME.
+
+DATA: LV_DESKTOP TYPE STRING.
+
+CALL METHOD CL_GUI_FRONTEND_SERVICES=>GET_DESKTOP_DIRECTORY
+  CHANGING
+    DESKTOP_DIRECTORY  =  LV_DESKTOP.
+CALL METHOD CL_GUI_CFW=>FLUSH.
+CONCATENATE LV_DESKTOP '\exceldata.xls' INTO GV_FILENAME.
+ENDFORM.
+*&---------------------------------------------------------------------*
+*&      Form  UPLOAD_EXCEL
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+*  -->  p1        text
+*  <--  p2        text
+*----------------------------------------------------------------------*
+FORM UPLOAD_EXCEL .
+CALL FUNCTION 'GUI_DOWNLOAD'
+  EXPORTING
+    FILENAME                        = GV_FILENAME
+   FILETYPE                         = 'ASC'
+   WRITE_FIELD_SEPARATOR            = 'I'
+  TABLES
+    DATA_TAB                        = GT_DATA
+   FIELDNAMES                      = GT_HEADER.
+IF SY-SUBRC <> 0.
+* Implement suitable error handling here
+ENDIF.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*&      Form  BUILD_HEADER
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+*  -->  p1        text
+*  <--  p2        text
+*----------------------------------------------------------------------*
+FORM BUILD_HEADER .
+REFRESH GT_HEADER.
+APPEND 'UNIT' TO GT_HEADER.
+APPEND 'NO' TO GT_HEADER.
+APPEND 'ADVANCE' TO GT_HEADER.
+APPEND 'TIME' TO GT_HEADER.
+APPEND 'DATE' TO GT_HEADER.
+APPEND 'AMOUNT' TO GT_HEADER.
+ENDFORM.
